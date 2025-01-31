@@ -18,49 +18,99 @@
 	{% endif %}
 	<div class="row">
 		<div class="col-md-10 col-12 mx-auto mt-5">
-			<div class="d-flex justify-content-end">
-				<a href="{% url 'add-item' %}" class="btn btn-primary">+</a>
-			</div>
+        <form method="GET" action="{% url 'dashboard' %}" class="mb-3 d-flex">
+            <input type="text" name="q" id="searchBox" value="{{ search }}" class="form-control me-2" placeholder="Search items..." autocomplete="off">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
 
-			<table class="table table-hover table-striped">
-				<thead>
-					<tr>
-						<th scope="col">ID</th>
-						<th scope="col">Name</th>
-						<th scope="col">Qty</th>
-						<th scope="col">Category</th>
-						<th scope="col"></th>
-						<th scope="col"></th>
-					</tr>
-				</thead>
-				<tbody>
-					{% if items|length == 0 %}
-					<tr>
-						<th scope="row">-</th>
-						<td>-</td>
-						<td>-</td>
-						<td>-</td>
-						<td>-</td>
-						<td></td>
-					</tr>
-					{% endif %}
+        <ul id="suggestions" class="list-group position-absolute"></ul>
 
-					{% for item in items %}
-					<tr>
-						<th scope="row">{{ item.id }}</th>
-						<td>{{ item.name }}</td>
-						{% if item.id in low_inventory_ids %}
-							<td class="text-danger">{{ item.quantity }}</td>
-						{% else %}
-							<td class="text-success">{{ item.quantity }}</td>
-						{% endif %}
-						<td>{{ item.category.name }}</td>
-						<td><a href="{% url 'edit-item' item.id %}" class="btn btn-outline-secondary">Edit</a></td>
-						<td><a href="{% url 'delete-item' item.id %}" class="btn btn-secondary">Delete</a></td>
-					</tr>
-					{% endfor %}
-				</tbody>
-			</table>
-		</div>
-	</div>
+        <div class="d-flex justify-content-end">
+            <a href="{% url 'add-item' %}" class="btn btn-primary">+</a>
+        </div>
+
+        <table class="table table-hover table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Qty</th>
+                    <th scope="col">Category</th>
+                    <th scope="col"></th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if items|length == 0 %}
+                <tr>
+                    <th scope="row">-</th>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td></td>
+                </tr>
+                {% endif %}
+
+                {% for item in items %}
+                <tr>
+                    <th scope="row">{{ item.id }}</th>
+                    <td>{{ item.name }}</td>
+                    {% if item.id in low_inventory_ids %}
+                        <td class="text-danger">{{ item.quantity }}</td>
+                    {% else %}
+                        <td class="text-success">{{ item.quantity }}</td>
+                    {% endif %}
+                    <td>{{ item.category.name }}</td>
+                    <td><a href="{% url 'edit-item' item.id %}" class="btn btn-outline-secondary">Edit</a></td>
+                    <td><a href="{% url 'delete-item' item.id %}" class="btn btn-secondary">Delete</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.getElementById("searchBox").addEventListener("keyup", function() {
+    let query = this.value;
+    if (query.length > 1) {
+        fetch(`/search_suggestions/?q=${query}`)
+            .then(response => response.json())
+            .then(data => {
+                let suggestionsList = document.getElementById("suggestions");
+                suggestionsList.innerHTML = "";
+                suggestionsList.style.display = "block";
+
+                data.forEach(item => {
+                    let li = document.createElement("li");
+                    li.textContent = item.name;
+                    li.classList.add("list-group-item");
+                    li.style.cursor = "pointer";
+
+                    // When clicked, search immediately
+                    li.addEventListener("click", function() {
+                        document.getElementById("searchBox").value = item.name;
+                        suggestionsList.innerHTML = "";
+                        suggestionsList.style.display = "none";
+
+                        // Redirect with search query
+                        window.location.href = `/dashboard/?q=${encodeURIComponent(item.name)}`;
+                    });
+
+                    suggestionsList.appendChild(li);
+                });
+            });
+    } else {
+        document.getElementById("suggestions").style.display = "none";
+    }
+});
+
+// Reset search if input is cleared
+document.getElementById("searchBox").addEventListener("input", function() {
+    if (this.value.trim() === "") {
+        window.location.href = "/dashboard/";  // Reloads the page to show all items
+    }
+});
+</script>
 {% endblock content %}
