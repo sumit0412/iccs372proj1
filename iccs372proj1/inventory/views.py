@@ -104,6 +104,10 @@ class AddItem(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        if form.cleaned_data['quantity'] < 0:
+            messages.error(self.request, "Quantity cannot be negative.")
+            return self.form_invalid(form)  # Prevents saving the item
+
         form.instance.user = self.request.user
         return super().form_valid(form)
 
@@ -112,6 +116,15 @@ class EditItem(LoginRequiredMixin, UpdateView):
     form_class = InventoryItemForm
     template_name = 'inventory/item_form.html'
     success_url = reverse_lazy('dashboard')
+
+    def form_valid(self, form):
+        if form.cleaned_data['quantity'] < 0:
+            messages.error(self.request, "Quantity cannot be negative.")
+            return self.form_invalid(form)  # Prevents saving the item
+
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
 
 class DeleteItem(LoginRequiredMixin, DeleteView):
     model = InventoryItem

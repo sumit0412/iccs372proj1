@@ -8,14 +8,33 @@
 		<div class="col-11 col-md-4 mx-auto mt-5">
 			<h1>Inventory Item</h1>
 
-			<form method="POST">
+			<form method="POST" id="addItemForm">
 				{% csrf_token %}
 				{{ form|crispy }}
 
 				<div class="mt-3">
-					<button class="btn btn-primary">Add Item</button>
+					<button type="submit" class="btn btn-primary">Add Item</button>
 				</div>
+
+				<!-- Error Message for JavaScript Validation -->
+				<p id="error-message" class="text-danger mt-2" style="display: none;">Quantity cannot be negative!</p>
 			</form>
 		</div>
 	</div>
+
+	<script>
+		document.getElementById("addItemForm").addEventListener("submit", function(event) {
+			let quantityField = document.getElementById("id_quantity");
+			let errorMessage = document.getElementById("error-message");
+
+			if (quantityField.value < 0) {
+				event.preventDefault(); // Stop form submission
+				errorMessage.style.display = "block"; // Show error message
+				quantityField.classList.add("is-invalid"); // Highlight field
+			} else {
+				errorMessage.style.display = "none";
+				quantityField.classList.remove("is-invalid");
+			}
+		});
+	</script>
 {% endblock content %}
