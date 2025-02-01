@@ -7,7 +7,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from .forms import UserRegisterForm, InventoryItemForm
 from .models import InventoryItem, Category
 
-from iccs372proj1.settings import LOW_QUANTITY
+from django.conf import settings
+LOW_QUANTITY = settings.LOW_QUANTITY
+
 from django.contrib import messages
 
 class Index(TemplateView):

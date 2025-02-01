@@ -53,16 +53,16 @@
                 {% endif %}
 
                 {% for item in items %}
-                <tr>
+                <tr class="{% if item.id in low_inventory_ids %}table-danger{% endif %}">
                     <th scope="row">{{ item.id }}</th>
                     <td>{{ item.name }}</td>
                     {% if item.id in low_inventory_ids %}
-                        <td class="text-danger">{{ item.quantity }}</td>
+                        <td class="text-light">{{ item.quantity }}</td>
                     {% else %}
                         <td class="text-success">{{ item.quantity }}</td>
                     {% endif %}
                     <td>{{ item.category.name }}</td>
-                    <td><a href="{% url 'edit-item' item.id %}" class="btn btn-outline-secondary">Edit</a></td>
+                    <td><a href="{% url 'edit-item' item.id %}" class="btn {% if item.id in low_inventory_ids %}btn-light{% else %}btn-success{% endif %}">Edit</a></td>
                     <td><a href="{% url 'delete-item' item.id %}" class="btn btn-secondary">Delete</a></td>
                 </tr>
                 {% endfor %}
