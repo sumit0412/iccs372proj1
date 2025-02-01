@@ -18,11 +18,26 @@ class Index(TemplateView):
 class Dashboard(LoginRequiredMixin, View):
     def get(self, request):
         search_query = request.GET.get('q', '')  # Get the search query from the URL
+        quantity_filter = request.GET.get('quantity_filter', '')
+        category_filter = request.GET.get('category_filter', '')
+
         items = InventoryItem.objects.filter(user=self.request.user.id).order_by('id')
 
+        # Apply search functionality
         if search_query:
-            items = items.filter(name__icontains=search_query)  # Filter items by search query
+            items = items.filter(name__icontains=search_query)
 
+        # Apply category filter if selected
+        if category_filter:
+            items = items.filter(category_id=category_filter)
+
+        # Apply quantity filter if selected
+        if quantity_filter == 'high_to_low':
+            items = items.order_by('-quantity')
+        elif quantity_filter == 'low_to_high':
+            items = items.order_by('quantity')
+
+        # Highlight low stock items
         low_inventory = InventoryItem.objects.filter(
             user=self.request.user.id,
             quantity__lte=LOW_QUANTITY
@@ -39,13 +54,19 @@ class Dashboard(LoginRequiredMixin, View):
             quantity__lte=LOW_QUANTITY
         ).values_list('id', flat=True)
 
+        # Get all categories for the category filter dropdown
+        categories = Category.objects.all()
+
         return render(
             request,
             'inventory/dashboard.html',
             {
                 'items': items,
                 'low_inventory_ids': low_inventory_ids,
-                'search': search_query  # Pass the search query to the template
+                'categories': categories,
+                'search': search_query,
+                'quantity_filter': quantity_filter,
+                'category_filter': category_filter,
             }
         )
 

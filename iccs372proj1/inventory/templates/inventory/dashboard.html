@@ -1,116 +1,186 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-	{% if messages %}
-		<div class="row mt-3">
-			{% for message in messages %}
-				{% if message.tags == 'error' %}
-					<div class="col-md-10 col-12 mx-auto alert alert-danger">
-						{{ message }}
-					</div>
-				{% else %}
-					<div class="col-md-10 col-12 mx-auto alert alert-success">
-						{{ message }}
-					</div>
-				{% endif %}
-			{% endfor %}
-		</div>
-	{% endif %}
-	<div class="row">
-		<div class="col-md-10 col-12 mx-auto mt-5">
-        <form method="GET" action="{% url 'dashboard' %}" class="mb-3 d-flex">
-            <input type="text" name="q" id="searchBox" value="{{ search }}" class="form-control me-2" placeholder="Search items..." autocomplete="off">
-            <button type="submit" class="btn btn-primary">Search</button>
-        </form>
-
-        <ul id="suggestions" class="list-group position-absolute"></ul>
-
-        <div class="d-flex justify-content-end">
-            <a href="{% url 'add-item' %}" class="btn btn-primary">+</a>
-        </div>
-
-        <table class="table table-hover table-striped">
-            <thead>
-                <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Name</th>
-                    <th scope="col">Qty</th>
-                    <th scope="col">Category</th>
-                    <th scope="col"></th>
-                    <th scope="col"></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if items|length == 0 %}
-                <tr>
-                    <th scope="row">-</th>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td></td>
-                </tr>
+    {% if messages %}
+        <div class="row mt-3">
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <div class="col-md-10 col-12 mx-auto alert alert-danger">
+                        {{ message }}
+                    </div>
+                {% else %}
+                    <div class="col-md-10 col-12 mx-auto alert alert-success">
+                        {{ message }}
+                    </div>
                 {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
 
-                {% for item in items %}
-                <tr class="{% if item.id in low_inventory_ids %}table-danger{% endif %}">
-                    <th scope="row">{{ item.id }}</th>
-                    <td>{{ item.name }}</td>
-                    {% if item.id in low_inventory_ids %}
-                        <td class="text-light">{{ item.quantity }}</td>
-                    {% else %}
-                        <td class="text-success">{{ item.quantity }}</td>
+    <div class="row">
+        <div class="col-md-10 col-12 mx-auto mt-5">
+            <!-- Search Bar -->
+            <form method="GET" action="{% url 'dashboard' %}" class="mb-3 d-flex">
+                <input type="text" name="q" id="searchBox" value="{{ search }}" class="form-control me-2" placeholder="Search items..." autocomplete="off">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+
+            <!-- Button to open sidebar filter -->
+            <button id="filterButton" class="btn btn-primary">Filter</button>
+
+            <!-- Sidebar for filters -->
+            <div id="filterSidebar" class="filter-sidebar">
+                <!-- Close Button -->
+                <button id="closeSidebarButton" class="btn btn-danger">X</button>
+
+                <form method="GET" action="{% url 'dashboard' %}" id="filterSidebarForm">
+                    <div class="filter-section">
+                        <h4>Filter by Quantity</h4>
+                        <select name="quantity_filter" class="form-select" id="quantityFilter">
+                            <option value="high_to_low" {% if quantity_filter == "high_to_low" %}selected{% endif %}>High to Low</option>
+                            <option value="low_to_high" {% if quantity_filter == "low_to_high" %}selected{% endif %}>Low to High</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-section">
+                        <h4>Filter by Category</h4>
+                        <select name="category_filter" class="form-select" id="categoryFilter">
+                            <option value="">Select Category</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if category_filter == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                <button type="button" id="clearFiltersButton" class="btn btn-warning mt-3">Clear Filters</button>
+                </form>
+            </div>
+
+            <!-- Hidden Form for Filter Submission -->
+            <form method="GET" action="{% url 'dashboard' %}" id="filterForm" class="d-none">
+                <input type="hidden" id="hiddenQuantityFilter" name="quantity_filter" value="{{ quantity_filter }}">
+                <input type="hidden" id="hiddenCategoryFilter" name="category_filter" value="{{ category_filter }}">
+            </form>
+
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Qty</th>
+                        <th scope="col">Category</th>
+                        <th scope="col"></th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if items|length == 0 %}
+                    <tr>
+                        <th scope="row">-</th>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td></td>
+                    </tr>
                     {% endif %}
-                    <td>{{ item.category.name }}</td>
-                    <td><a href="{% url 'edit-item' item.id %}" class="btn {% if item.id in low_inventory_ids %}btn-light{% else %}btn-success{% endif %}">Edit</a></td>
-                    <td><a href="{% url 'delete-item' item.id %}" class="btn btn-secondary">Delete</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+                    {% for item in items %}
+                    <tr class="{% if item.id in low_inventory_ids %}table-danger{% endif %}">
+                        <th scope="row">{{ item.id }}</th>
+                        <td>{{ item.name }}</td>
+                        <td class="{% if item.id in low_inventory_ids %}text-light{% else %}text-success{% endif %}">{{ item.quantity }}</td>
+                        <td>{{ item.category.name }}</td>
+                        <td><a href="{% url 'edit-item' item.id %}" class="{% if item.id in low_inventory_ids %}btn btn-light{% else %}btn btn-success{% endif %}">Edit</a></td>
+                        <td><a href="{% url 'delete-item' item.id %}" class="btn btn-secondary">Delete</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
 
-<script>
-document.getElementById("searchBox").addEventListener("keyup", function() {
-    let query = this.value;
-    if (query.length > 1) {
-        fetch(`/search_suggestions/?q=${query}`)
-            .then(response => response.json())
-            .then(data => {
-                let suggestionsList = document.getElementById("suggestions");
-                suggestionsList.innerHTML = "";
-                suggestionsList.style.display = "block";
+    <script>
+        // JavaScript to handle opening and closing the sidebar
+        document.getElementById("filterButton").addEventListener("click", function() {
+            document.getElementById("filterSidebar").classList.toggle("open");
+        });
 
-                data.forEach(item => {
-                    let li = document.createElement("li");
-                    li.textContent = item.name;
-                    li.classList.add("list-group-item");
-                    li.style.cursor = "pointer";
+        // Close the sidebar when clicking the close button
+        document.getElementById("closeSidebarButton").addEventListener("click", function() {
+            document.getElementById("filterSidebar").classList.remove("open");
+        });
 
-                    // When clicked, search immediately
-                    li.addEventListener("click", function() {
-                        document.getElementById("searchBox").value = item.name;
-                        suggestionsList.innerHTML = "";
-                        suggestionsList.style.display = "none";
+        // Filter dropdowns and form handling
+        const quantitySelect = document.getElementById("quantityFilter");
+        const categorySelect = document.getElementById("categoryFilter");
 
-                        // Redirect with search query
-                        window.location.href = `/dashboard/?q=${encodeURIComponent(item.name)}`;
-                    });
+        quantitySelect.addEventListener("change", function(event) {
+            event.preventDefault();
+            document.getElementById("hiddenQuantityFilter").value = this.value;
+            console.log("Quantity Filter:", this.value);
+            document.getElementById("filterForm").submit();
+        });
 
-                    suggestionsList.appendChild(li);
-                });
-            });
-    } else {
-        document.getElementById("suggestions").style.display = "none";
-    }
-});
+        categorySelect.addEventListener("change", function(event) {
+            event.preventDefault();
+            document.getElementById("hiddenCategoryFilter").value = this.value;
+            console.log("Category Filter:", this.value);
+            document.getElementById("filterForm").submit();
+        });
 
-// Reset search if input is cleared
-document.getElementById("searchBox").addEventListener("input", function() {
-    if (this.value.trim() === "") {
-        window.location.href = "/dashboard/";  // Reloads the page to show all items
-    }
-});
-</script>
+        document.getElementById("clearFiltersButton").addEventListener("click", function() {
+            window.location.href = "{% url 'dashboard' %}";  // Reload the page without filters
+        });
+    </script>
+
+    <style>
+        /* Sidebar styles for sliding in from the left */
+        .filter-sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px; /* Start hidden on the left */
+            width: 300px;
+            height: 100%;
+            background-color: #f8f9fa;
+            box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            transition: left 0.3s ease;
+        }
+
+        .filter-sidebar.open {
+            left: 0; /* Slide in when open */
+        }
+
+        .filter-sidebar .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-sidebar h4 {
+            margin-bottom: 10px;
+        }
+
+        .filter-sidebar .form-select {
+            width: 100%;
+        }
+
+        /* Close button inside the sidebar */
+        #closeSidebarButton {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 14px;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            text-align: center;
+            line-height: 30px;
+            border-radius: 4px;
+            border: none;
+            background-color: #dc3545;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
 {% endblock content %}
