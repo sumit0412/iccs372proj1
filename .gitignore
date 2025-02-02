@@ -212,3 +212,7 @@ ENV/
 /site
 
 # End of https://www.gitignore.io/api/macos,linux,django,python,pycharm
+
+__pycache__/
+*.py[cod]
+*$py.class
