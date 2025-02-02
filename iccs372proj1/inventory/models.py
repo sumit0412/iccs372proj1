@@ -3,6 +3,10 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
+from django.conf import settings
+
+from .google_calendar import GoogleCalendarAPI
+
 
 class Category(models.Model):
     """Category for inventory items"""
@@ -47,12 +51,14 @@ class InventoryItem(models.Model):
         """Check if item is in low stock"""
         return self.quantity <= threshold
 
+
 class LabRoom(models.Model):
     """Lab room model"""
     name = models.CharField(max_length=100, unique=True)
     calendar_id = models.CharField(
         max_length=255,
         blank=True,  # Keep it nullable
+        default='',
         help_text="Google Calendar ID for this room (optional)"
     )
     description = models.TextField(blank=True)
@@ -88,7 +94,7 @@ class LabRoom(models.Model):
 
 
 class Reservation(models.Model):
-    """Lab room reservation model"""
+    """Reservation model for lab rooms"""
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('confirmed', 'Confirmed'),
@@ -100,14 +106,21 @@ class Reservation(models.Model):
         on_delete=models.CASCADE,
         related_name='reservations'
     )
-    lab_room = models.ForeignKey(
-        LabRoom,
-        on_delete=models.CASCADE,
-        related_name='reservations'
+    room_key = models.CharField(
+        max_length=50,
+        default='room1',  # Set default value to 'room1'
+        help_text="The room identifier (e.g., 'room1', 'room2')"
+    )
+    calendar_id = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Google Calendar ID for the room"
     )
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
-    purpose = models.TextField()
+    purpose = models.TextField(
+        help_text="Purpose of the reservation"
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -127,42 +140,156 @@ class Reservation(models.Model):
         verbose_name_plural = 'Reservations'
 
     def __str__(self):
-        return f"{self.lab_room.name} - {self.user.username} - {self.start_time.strftime('%Y-%m-%d %H:%M')}"
+        """String representation of the reservation"""
+        room_name = settings.LAB_ROOMS[self.room_key]['name']
+        return f"{room_name} - {self.user.username} - {self.start_time.strftime('%Y-%m-%d %H:%M')}"
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+
+        # Set calendar_id from settings if not already set
+        if not self.calendar_id and self.room_key in settings.LAB_ROOMS:
+            self.calendar_id = settings.LAB_ROOMS[self.room_key]['calendar_id']
+
+        # Create or update Google Calendar event
+        if self.status == 'confirmed':
+            calendar_api = GoogleCalendarAPI()
+            event_summary = f"Room Reservation - {self.room_name}"
+            event_description = f"Reserved by: {self.user.username}\nPurpose: {self.purpose}"
+
+            try:
+                if is_new or not self.event_id:
+                    # Create new event
+                    self.event_id = calendar_api.create_event(
+                        self.calendar_id,
+                        event_summary,
+                        self.start_time,
+                        self.end_time,
+                        event_description
+                    )
+                else:
+                    # Update existing event
+                    calendar_api.update_event(
+                        self.calendar_id,
+                        self.event_id,
+                        event_summary,
+                        self.start_time,
+                        self.end_time,
+                        event_description
+                    )
+            except Exception as e:
+                raise ValidationError(f"Calendar sync failed: {str(e)}")
+
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Delete Google Calendar event if it exists
+        if self.event_id:
+            try:
+                calendar_api = GoogleCalendarAPI()
+                calendar_api.delete_event(self.calendar_id, self.event_id)
+            except Exception as e:
+                # Log the error but continue with deletion
+                print(f"Failed to delete Google Calendar event: {str(e)}")
+
+        super().delete(*args, **kwargs)
+
+    def cancel(self):
+        """Cancel the reservation"""
+        if self.status != 'cancelled':
+            # Delete Google Calendar event if it exists
+            if self.event_id:
+                try:
+                    calendar_api = GoogleCalendarAPI()
+                    calendar_api.delete_event(self.calendar_id, self.event_id)
+                    self.event_id = ''
+                except Exception as e:
+                    raise ValidationError(f"Failed to cancel calendar event: {str(e)}")
+
+            self.status = 'cancelled'
+            self.save()
+            return True
+        return False
 
     def clean(self):
         """Validate the reservation"""
-        if self.start_time and self.end_time:
-            # Check if end time is after start time
-            if self.end_time <= self.start_time:
-                raise ValidationError("End time must be after start time")
+        if not self.start_time or not self.end_time:
+            raise ValidationError("Both start and end times are required.")
 
-            # Check if start time is in the future
-            if self.start_time < timezone.now():
-                raise ValidationError("Cannot create reservations in the past")
+        # Check if room_key is valid
+        if self.room_key not in settings.LAB_ROOMS:
+            raise ValidationError("Invalid room selection.")
 
-            # Check if duration is within allowed limits (e.g., 4 hours maximum)
-            max_duration = timedelta(hours=4)
-            if (self.end_time - self.start_time) > max_duration:
-                raise ValidationError("Reservation duration cannot exceed 4 hours")
+        # Check if end time is after start time
+        if self.end_time <= self.start_time:
+            raise ValidationError("End time must be after start time.")
 
-            # Check for conflicts with existing reservations
-            if not self.lab_room.is_available_at(self.start_time, self.end_time):
-                raise ValidationError("Room is already reserved during this time period")
+        # Check if start time is in the future
+        if self.start_time < timezone.now():
+            raise ValidationError("Cannot create reservations in the past.")
 
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
+        # Check if duration is within allowed limits (e.g., 4 hours maximum)
+        max_duration = timedelta(hours=4)
+        if (self.end_time - self.start_time) > max_duration:
+            raise ValidationError("Reservation duration cannot exceed 4 hours.")
+
+        # Check for conflicts with existing reservations
+        conflicts = Reservation.objects.filter(
+            room_key=self.room_key,
+            status='confirmed',
+            start_time__lt=self.end_time,
+            end_time__gt=self.start_time
+        )
+
+        # Exclude current reservation when checking conflicts (for updates)
+        if self.pk:
+            conflicts = conflicts.exclude(pk=self.pk)
+
+        if conflicts.exists():
+            raise ValidationError("This time slot conflicts with an existing reservation.")
+
+    @property
+    def room_name(self):
+        """Get the friendly name of the room"""
+        return settings.LAB_ROOMS[self.room_key]['name']
 
     @property
     def duration(self):
-        """Get reservation duration in hours"""
+        """Get the duration of the reservation in hours"""
         return (self.end_time - self.start_time).total_seconds() / 3600
 
     @property
     def is_active(self):
-        """Check if reservation is currently active"""
+        """Check if the reservation is currently active"""
         now = timezone.now()
         return (
-            self.status == 'confirmed' and
-            self.start_time <= now <= self.end_time
+                self.status == 'confirmed' and
+                self.start_time <= now <= self.end_time
         )
+
+    @classmethod
+    def get_upcoming_reservations(cls, room_key):
+        """Get all upcoming reservations for a specific room"""
+        return cls.objects.filter(
+            room_key=room_key,
+            status='confirmed',
+            end_time__gte=timezone.now()
+        ).order_by('start_time')
+
+    @classmethod
+    def get_user_reservations(cls, user):
+        """Get all reservations for a specific user"""
+        return cls.objects.filter(
+            user=user
+        ).order_by('-start_time')
+
+    @classmethod
+    def is_room_available(cls, room_key, start_time, end_time):
+        """Check if a room is available during the specified time period"""
+        conflicts = cls.objects.filter(
+            room_key=room_key,
+            status='confirmed',
+            start_time__lt=end_time,
+            end_time__gt=start_time
+        )
+        return not conflicts.exists()

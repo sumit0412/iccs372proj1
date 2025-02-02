@@ -3,12 +3,19 @@
 {% block content %}
 <div class="container">
     <div class="row mb-3">
-        <div class="col">
+        <div class="col-md-8">
             <select id="roomSelector" class="form-control" onchange="changeRoom()">
-                {% for room_id, room in lab_rooms.items %}
-                    <option value="{{ room.calendar_id }}">{{ room.name }}</option>
+                {% for room_key, room in lab_rooms.items %}
+                    <option value="{{ room.calendar_id }}" data-room-key="{{ room_key }}">
+                        {{ room.name }}
+                    </option>
                 {% endfor %}
             </select>
+        </div>
+        <div class="col-md-4">
+            <a id="bookRoomButton" href="{% url 'create-reservation' 'room1' %}" class="btn btn-primary">
+                Book This Room
+            </a>
         </div>
     </div>
     
@@ -28,8 +35,11 @@
 function changeRoom() {
     const selector = document.getElementById('roomSelector');
     const calendarFrame = document.getElementById('calendarFrame');
+    const bookRoomButton = document.getElementById('bookRoomButton');
     const selectedCalendarId = selector.value;
+    const selectedRoomKey = selector.options[selector.selectedIndex].getAttribute('data-room-key');
     
+    // Update calendar iframe
     const baseUrl = 'https://calendar.google.com/calendar/embed';
     const params = new URLSearchParams({
         src: selectedCalendarId,
@@ -41,6 +51,9 @@ function changeRoom() {
     });
     
     calendarFrame.src = `${baseUrl}?${params.toString()}`;
+    
+    // Update booking button URL
+    bookRoomButton.href = `/create-reservation/${selectedRoomKey}/`;
 }
 </script>
 {% endblock %}

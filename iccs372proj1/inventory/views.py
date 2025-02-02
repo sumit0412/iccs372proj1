@@ -6,9 +6,12 @@ from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, UpdateView, DeleteView, ListView
 from django.views.generic import TemplateView, View
+from django.utils import timezone
+from django.http import Http404
+from django.core.exceptions import ValidationError
 
-from .forms import UserRegisterForm, InventoryItemForm
-from .models import InventoryItem, Category
+from .forms import UserRegisterForm, InventoryItemForm, ReservationForm
+from .models import InventoryItem, Category, LabRoom
 
 LOW_QUANTITY = settings.LOW_QUANTITY
 
@@ -155,3 +158,56 @@ class RoomCalendarView(LoginRequiredMixin, View):
             'default_calendar_id': settings.LAB_ROOMS['room1']['calendar_id']
         }
         return render(request, 'inventory/room_calendar.html', context)
+
+
+class CreateReservationView(LoginRequiredMixin, View):
+    def get_lab_room(self, room_key):
+        if room_key not in settings.LAB_ROOMS:
+            raise Http404("Lab room not found")
+        room_data = settings.LAB_ROOMS[room_key]
+        return {
+            'name': room_data['name'],
+            'calendar_id': room_data['calendar_id'],
+            'key': room_key
+        }
+
+    def get(self, request, room_key):
+        room = self.get_lab_room(room_key)
+        form = ReservationForm()
+        return render(request, 'inventory/create_reservation.html', {
+            'form': form,
+            'room': room
+        })
+
+    def post(self, request, room_key):
+        room = self.get_lab_room(room_key)
+        form = ReservationForm(request.POST)
+
+        if form.is_valid():
+            reservation = form.save(commit=False)
+            reservation.user = request.user
+            reservation.room_key = room_key
+            reservation.calendar_id = room['calendar_id']
+            reservation.status = 'confirmed'  # Set status to confirmed
+
+            try:
+                reservation.save()
+                messages.success(request, "Reservation created successfully")
+                return redirect('room-calendar')
+            except ValidationError as e:
+                messages.error(request, str(e))
+                return render(request, 'inventory/create_reservation.html', {
+                    'form': form,
+                    'room': room
+                })
+            except Exception as e:
+                messages.error(request, f"Error creating reservation: {str(e)}")
+                return render(request, 'inventory/create_reservation.html', {
+                    'form': form,
+                    'room': room
+                })
+
+        return render(request, 'inventory/create_reservation.html', {
+            'form': form,
+            'room': room
+        })
