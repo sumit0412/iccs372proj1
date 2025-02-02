@@ -1,0 +1,28 @@
+{% extends 'inventory/base.html' %}
+{% load static %}
+{% block content %}
+  <h1 class="mb-4">Schedule Lab Rooms</h1>
+
+  {% if events %}
+    <div class="list-group">
+      {% for event in events %}
+        <div class="list-group-item">
+          <strong>{{ event.summary }}</strong> –
+          {% if event.start.dateTime %}
+            {{ event.start.dateTime|date:"SHORT_DATETIME_FORMAT" }}
+          {% else %}
+            {{ event.start.date }}
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-warning" role="alert">
+      No events found.
+    </div>
+    <p>
+      To connect with Google Calendar, please click below:
+    </p>
+    <a href="{% url 'google_calendar_init' %}" class="btn btn-primary">Connect Google Calendar</a>
+  {% endif %}
+{% endblock %}
