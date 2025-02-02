@@ -1,24 +1,23 @@
+from django.conf import settings
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
-from django.views.generic import TemplateView, View, CreateView, UpdateView, DeleteView
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import CreateView, UpdateView, DeleteView, ListView
+from django.views.generic import TemplateView, View
+
 from .forms import UserRegisterForm, InventoryItemForm
 from .models import InventoryItem, Category
-from django.views.generic import TemplateView, View
-import os
-import google.oauth2.credentials
-import google_auth_oauthlib.flow
-import googleapiclient.discovery
 
-from django.conf import settings
 LOW_QUANTITY = settings.LOW_QUANTITY
 
 from django.contrib import messages
 
+
 class Index(TemplateView):
     template_name = 'inventory/index.html'
+
 
 class Dashboard(LoginRequiredMixin, View):
     def get(self, request):
@@ -76,7 +75,6 @@ class Dashboard(LoginRequiredMixin, View):
         )
 
 
-
 class SignUpView(View):
     def get(self, request):
         form = UserRegisterForm()
@@ -97,6 +95,7 @@ class SignUpView(View):
 
         return render(request, 'inventory/signup.html', {'form': form})
 
+
 class AddItem(LoginRequiredMixin, CreateView):
     model = InventoryItem
     form_class = InventoryItemForm
@@ -115,6 +114,7 @@ class AddItem(LoginRequiredMixin, CreateView):
 
         form.instance.user = self.request.user
         return super().form_valid(form)
+
 
 class EditItem(LoginRequiredMixin, UpdateView):
     model = InventoryItem
@@ -137,7 +137,8 @@ class DeleteItem(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('dashboard')
     context_object_name = 'item'
 
-class SearchSuggestions(View):
+
+class SearchSuggestions(LoginRequiredMixin, View):
     def get(self, request):
         query = request.GET.get("q", "")
         if query:
@@ -145,90 +146,12 @@ class SearchSuggestions(View):
             return JsonResponse(list(items), safe=False)
         return JsonResponse([], safe=False)
 
-# Define the required scopes for Google Calendar API (adjust scopes as needed)
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
-# Optionally, you can add more scopes if needed (like calendar.events)
 
-# Utility function to build the Google Calendar service
-def build_calendar_service(request):
-    if 'credentials' not in request.session:
-        return None
-    credentials = google.oauth2.credentials.Credentials(**request.session['credentials'])
-    service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials)
-    return service
-
-class ScheduleView(LoginRequiredMixin, TemplateView):
-    template_name = 'inventory/schedule.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        service = build_calendar_service(self.request)
-        events = []
-        if service:
-            # Example: Retrieve the upcoming 10 events from the primary calendar
-            try:
-                events_result = service.events().list(
-                    calendarId='primary',  # Or use a specific calendar ID for lab rooms
-                    maxResults=10,
-                    singleEvents=True,
-                    orderBy='startTime'
-                ).execute()
-                events = events_result.get('items', [])
-            except Exception as e:
-                messages.error(self.request, f"Error accessing Google Calendar: {e}")
-        context['events'] = events
-        return context
-
-class GoogleCalendarInitView(LoginRequiredMixin, View):
-    """
-    Initiates the OAuth2 flow with Google.
-    """
-    def get(self, request, *args, **kwargs):
-        # Create the flow instance from the client secrets file.
-        # Ensure that you have a file named 'client_secret.json' in your BASE_DIR.
-        flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-            os.path.join(settings.BASE_DIR, 'client_secret.json'),
-            scopes=SCOPES
-        )
-        # Set the redirect URI for the OAuth2 callback.
-        flow.redirect_uri = request.build_absolute_uri(reverse('google_calendar_redirect'))
-        # Generate the authorization URL.
-        authorization_url, state = flow.authorization_url(
-            access_type='offline',
-            include_granted_scopes='true'
-        )
-        # Save the state in the session so that the callback can verify the auth flow.
-        request.session['state'] = state
-        return redirect(authorization_url)
-
-class GoogleCalendarRedirectView(LoginRequiredMixin, View):
-    """
-    Handles the OAuth2 callback from Google.
-    """
-    def get(self, request, *args, **kwargs):
-        state = request.session.get('state')
-        flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-            os.path.join(settings.BASE_DIR, 'client_secret.json'),
-            scopes=SCOPES,
-            state=state
-        )
-        flow.redirect_uri = request.build_absolute_uri(reverse('google_calendar_redirect'))
-        # Use the full URL to fetch the token.
-        authorization_response = request.build_absolute_uri()
-        try:
-            flow.fetch_token(authorization_response=authorization_response)
-        except Exception as e:
-            messages.error(request, f"OAuth token fetch failed: {e}")
-            return redirect('schedule')
-        credentials = flow.credentials
-        # Save the credentials in the session.
-        request.session['credentials'] = {
-            'token': credentials.token,
-            'refresh_token': credentials.refresh_token,
-            'token_uri': credentials.token_uri,
-            'client_id': credentials.client_id,
-            'client_secret': credentials.client_secret,
-            'scopes': credentials.scopes
+class RoomCalendarView(LoginRequiredMixin, View):
+    def get(self, request):
+        context = {
+            'lab_rooms': settings.LAB_ROOMS,
+            'timezone': settings.TIMEZONE,
+            'default_calendar_id': settings.LAB_ROOMS['room1']['calendar_id']
         }
-        messages.success(request, "Google Calendar successfully connected!")
-        return redirect('schedule')
+        return render(request, 'inventory/room_calendar.html', context)

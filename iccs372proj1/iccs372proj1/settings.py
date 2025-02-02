@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-+c^g9c+*)q!fs*dll$2*apqk=g@c*6)9%ikw^8t!v)3k+q8fa2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
 
 # Application definition
@@ -41,6 +41,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+LAB_ROOMS = {
+    'room1': {'name': 'Lab Room 1', 'calendar_id': 'c_494b497eabb29d3866a26954c964cc4d37eecc550bd43644e10ecbf458a3917d@group.calendar.google.com'},
+    'room2': {'name': 'Lab Room 2', 'calendar_id': 'c_3a3bfa9453191b6c5d4a2bb91e65da3e27ac4cbb68df71b79544de8f91e53c82@group.calendar.google.com'},
+    'room3': {'name': 'Lab Room 3', 'calendar_id': 'c_e06857ebb2c6cf25350feb85d269f570e4753ecd3fdb7537807e43fcc94f7799@group.calendar.google.com'},
+    'room4': {'name': 'Lab Room 4', 'calendar_id': 'c_08b064952f4fec9e0ae24b91644b2f98165c085d7b29abc9066ff867d3947e09@group.calendar.google.com'},
+    'room5': {'name': 'Lab Room 5', 'calendar_id': 'c_e1502d41091c7caf280fd10f8e362a7de2ec24e738a88bad835ed9818a02d794@group.calendar.google.com'},
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -108,7 +116,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIMEZONE = 'Asia/Bangkok'
 
 USE_I18N = True
 
@@ -117,8 +125,10 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
