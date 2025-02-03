@@ -1,0 +1,1 @@
+web: gunicorn iccs372proj1.wsgi
