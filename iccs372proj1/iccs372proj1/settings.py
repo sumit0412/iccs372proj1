@@ -121,7 +121,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIMEZONE = 'Asia/Bangkok'
+TIME_ZONE = 'Asia/Bangkok'
 
 USE_I18N = True
 

@@ -1,17 +1,17 @@
 from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
-from django.shortcuts import render, redirect
-from django.urls import reverse, reverse_lazy
-from django.views.generic import CreateView, UpdateView, DeleteView, ListView
-from django.views.generic import TemplateView, View
-from django.utils import timezone
-from django.http import Http404
 from django.core.exceptions import ValidationError
+from django.http import Http404
+from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import TemplateView, View
 
 from .forms import UserRegisterForm, InventoryItemForm, ReservationForm
-from .models import InventoryItem, Category, LabRoom
+from .models import InventoryItem, Category, Reservation
 
 LOW_QUANTITY = settings.LOW_QUANTITY
 
@@ -154,7 +154,7 @@ class RoomCalendarView(LoginRequiredMixin, View):
     def get(self, request):
         context = {
             'lab_rooms': settings.LAB_ROOMS,
-            'timezone': settings.TIMEZONE,
+            'timezone': settings.TIME_ZONE,
             'default_calendar_id': settings.LAB_ROOMS['room1']['calendar_id']
         }
         return render(request, 'inventory/room_calendar.html', context)
@@ -173,7 +173,7 @@ class CreateReservationView(LoginRequiredMixin, View):
 
     def get(self, request, room_key):
         room = self.get_lab_room(room_key)
-        form = ReservationForm()
+        form = ReservationForm(initial={'room_key': room_key})  # Add initial value
         return render(request, 'inventory/create_reservation.html', {
             'form': form,
             'room': room
@@ -211,3 +211,98 @@ class CreateReservationView(LoginRequiredMixin, View):
             'form': form,
             'room': room
         })
+
+
+class UpdateReservationView(LoginRequiredMixin, View):
+    def get_object(self):
+        return get_object_or_404(Reservation, pk=self.kwargs['pk'], user=self.request.user)
+
+    def get_room_name(self, room_key):
+        return settings.LAB_ROOMS.get(room_key, {}).get('name', 'Unknown Room')
+
+    def get(self, request, *args, **kwargs):
+        reservation = self.get_object()
+        form = ReservationForm(instance=reservation)
+        return render(request, 'inventory/update_reservation.html', {
+            'form': form,
+            'reservation': reservation,
+            'room_name': self.get_room_name(reservation.room_key)  # Add this
+        })
+
+    def post(self, request, *args, **kwargs):
+        reservation = self.get_object()
+        form = ReservationForm(request.POST, instance=reservation)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Reservation updated successfully.')
+            return redirect('reservation_list')  # or wherever you want to redirect
+        return render(request, 'inventory/update_reservation.html', {
+            'form': form,
+            'reservation': reservation
+        })
+
+
+class DeleteReservationView(LoginRequiredMixin, View):
+    def get_object(self):
+        return get_object_or_404(Reservation, pk=self.kwargs['pk'], user=self.request.user)
+
+    def post(self, request, *args, **kwargs):
+        reservation = self.get_object()
+        reservation.delete()
+        messages.success(request, 'Reservation deleted successfully.')
+        return redirect('reservation_list')
+
+    def get(self, request, *args, **kwargs):
+        reservation = self.get_object()
+        return render(request, 'inventory/delete_reservation.html', {
+            'reservation': reservation
+        })
+
+
+class ReservationListView(LoginRequiredMixin, ListView):
+    model = Reservation
+    template_name = 'inventory/reservation_list.html'
+    context_object_name = 'reservations'
+    paginate_by = 10
+
+    def get_queryset(self):
+        # Get base queryset
+        queryset = Reservation.objects.filter(user=self.request.user)
+
+        # Add status filter
+        status = self.request.GET.get('status')
+        if status in ['confirmed', 'pending', 'cancelled']:
+            queryset = queryset.filter(status=status)
+
+        # Filter out past reservations if requested
+        show_past = self.request.GET.get('show_past') == 'true'
+        if not show_past:
+            queryset = queryset.filter(end_time__gte=timezone.localtime())
+
+        return queryset.order_by('-start_time')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add all necessary context variables
+        context.update({
+            'lab_rooms': settings.LAB_ROOMS,
+            'status': self.request.GET.get('status', ''),
+            'show_past': self.request.GET.get('show_past', 'false'),
+            'now': timezone.localtime(),
+            'is_paginated': self.paginate_by and self.get_queryset().count() > self.paginate_by,
+        })
+
+        # Add page range for better pagination display
+        if context['is_paginated']:
+            page = context['page_obj']
+            paginator = context['paginator']
+
+            # Calculate page range to display
+            ADJACENT_PAGES = 2
+            page_range = range(
+                max(1, page.number - ADJACENT_PAGES),
+                min(paginator.num_pages + 1, page.number + ADJACENT_PAGES + 1)
+            )
+            context['page_range'] = page_range
+
+        return context

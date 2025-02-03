@@ -2,9 +2,9 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-<div class="container">
-    <h2>Create Reservation for {{ room.name }}</h2>
-    
+<div class="container mt-4">
+    <h2>Update Reservation for {{ room_name }}</h2>
+
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }}">
@@ -13,15 +13,11 @@
         {% endfor %}
     {% endif %}
 
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle"></i> Note: Reservations cannot exceed 4 hours.
-    </div>
-    
     <form method="post">
         {% csrf_token %}
         {{ form|crispy }}
-        <button type="submit" class="btn btn-primary">Create Reservation</button>
-        <a href="{% url 'room-calendar' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Update</button>
+        <a href="{% url 'reservation_list' %}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
 {% endblock %}

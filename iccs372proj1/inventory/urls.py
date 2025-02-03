@@ -1,9 +1,10 @@
 from django.urls import path, include, reverse_lazy
 from .views import (
     Index, SignUpView, Dashboard, AddItem, EditItem, DeleteItem, SearchSuggestions, RoomCalendarView,
-    CreateReservationView
+    CreateReservationView, UpdateReservationView, DeleteReservationView, ReservationListView
 )
 from django.contrib.auth import views as auth_views
+from . import views
 
 urlpatterns = [
     path('', Index.as_view(), name='index'),
@@ -17,4 +18,7 @@ urlpatterns = [
     path('search_suggestions/', SearchSuggestions.as_view(), name='search_suggestions'),
     path('room-calendar/', RoomCalendarView.as_view(), name='room-calendar'),
     path('create-reservation/<str:room_key>/', CreateReservationView.as_view(), name='create-reservation'),
+    path('reservation/<int:pk>/update/', UpdateReservationView.as_view(), name='update_reservation'),
+    path('reservation/<int:pk>/delete/', DeleteReservationView.as_view(), name='delete_reservation'),
+    path('my-reservations/', ReservationListView.as_view(), name='reservation_list'),
 ]
