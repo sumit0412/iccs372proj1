@@ -28,7 +28,7 @@ class Dashboard(LoginRequiredMixin, View):
         quantity_filter = request.GET.get('quantity_filter', '')
         category_filter = request.GET.get('category_filter', '')
 
-        items = InventoryItem.objects.filter(user=self.request.user.id).order_by('id')
+        items = InventoryItem.objects.all().order_by('id')
 
         # Apply search functionality
         if search_query:
@@ -46,7 +46,6 @@ class Dashboard(LoginRequiredMixin, View):
 
         # Highlight low stock items
         low_inventory = InventoryItem.objects.filter(
-            user=self.request.user.id,
             quantity__lte=LOW_QUANTITY
         )
 
@@ -57,7 +56,6 @@ class Dashboard(LoginRequiredMixin, View):
                 messages.error(request, f'{low_inventory.count()} item has low inventory')
 
         low_inventory_ids = InventoryItem.objects.filter(
-            user=self.request.user.id,
             quantity__lte=LOW_QUANTITY
         ).values_list('id', flat=True)
 
@@ -105,6 +103,11 @@ class AddItem(LoginRequiredMixin, CreateView):
     template_name = 'inventory/item_form.html'
     success_url = reverse_lazy('dashboard')
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user  # Pass current user to the form
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['categories'] = Category.objects.all()
@@ -113,8 +116,7 @@ class AddItem(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         if form.cleaned_data['quantity'] < 0:
             messages.error(self.request, "Quantity cannot be negative.")
-            return self.form_invalid(form)  # Prevents saving the item
-
+            return self.form_invalid(form)
         form.instance.user = self.request.user
         return super().form_valid(form)
 
@@ -125,11 +127,15 @@ class EditItem(LoginRequiredMixin, UpdateView):
     template_name = 'inventory/item_form.html'
     success_url = reverse_lazy('dashboard')
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user  # Pass the current user to the form
+        return kwargs
+
     def form_valid(self, form):
         if form.cleaned_data['quantity'] < 0:
             messages.error(self.request, "Quantity cannot be negative.")
-            return self.form_invalid(form)  # Prevents saving the item
-
+            return self.form_invalid(form)
         form.instance.user = self.request.user
         return super().form_valid(form)
 

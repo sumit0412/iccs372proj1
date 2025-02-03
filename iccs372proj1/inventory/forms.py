@@ -20,6 +20,20 @@ class InventoryItemForm(forms.ModelForm):
         model = InventoryItem
         fields = ['name', 'quantity', 'category']
 
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if name:
+            qs = InventoryItem.objects.filter(name__iexact=name)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError("An item with this name already exists in the inventory.")
+        return name
+
 
 from django import forms
 from .models import Reservation

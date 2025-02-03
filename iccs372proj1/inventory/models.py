@@ -21,11 +21,10 @@ class Category(models.Model):
 
 
 class InventoryItem(models.Model):
-    """Inventory item model"""
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
     quantity = models.PositiveIntegerField()
     category = models.ForeignKey(
-        Category,
+        'Category',
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
