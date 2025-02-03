@@ -18,13 +18,13 @@
             </a>
         </div>
     </div>
-    
+
     <div class="row">
         <div class="col">
             <iframe id="calendarFrame" title="Google Calendar"
-                src="https://calendar.google.com/calendar/embed?src={{ default_calendar_id }}&mode=WEEK&height=600&wkst=1&bgcolor=%23ffffff&ctz={{ timezone }}"
-                style="border: 0" 
-                width="100%" 
+                src="https://calendar.google.com/calendar/embed?src={{ default_calendar_id }}&mode=WEEK&height=600&wkst=1&bgcolor=%23ffffff&ctz={{ timezone }}&hl=en"
+                style="border: 0"
+                width="100%"
                 height="600">
             </iframe>
         </div>
@@ -38,7 +38,7 @@ function changeRoom() {
     const bookRoomButton = document.getElementById('bookRoomButton');
     const selectedCalendarId = selector.value;
     const selectedRoomKey = selector.options[selector.selectedIndex].getAttribute('data-room-key');
-    
+
     // Update calendar iframe
     const baseUrl = 'https://calendar.google.com/calendar/embed';
     const params = new URLSearchParams({
@@ -47,11 +47,12 @@ function changeRoom() {
         height: '600',
         wkst: '1',
         bgcolor: '#ffffff',
-        ctz: '{{ timezone }}'
+        ctz: '{{ timezone }}',
+        hl: 'en'  // Added language parameter
     });
-    
+
     calendarFrame.src = `${baseUrl}?${params.toString()}`;
-    
+
     // Update booking button URL
     bookRoomButton.href = `/create-reservation/${selectedRoomKey}/`;
 }
