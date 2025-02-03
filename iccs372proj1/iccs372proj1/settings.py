@@ -25,7 +25,7 @@ with open(os.path.join(BASE_DIR, 'project-1-soft-en.json')) as f:
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY", "xhCKMfgo71Ld5cPgyVXcg31d-H-Ewrf2cT5I3G1GNxKTYydAo63dN5s7drGmjmqDgk8")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
