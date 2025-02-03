@@ -28,9 +28,9 @@ with open(os.path.join(BASE_DIR, 'project-1-soft-en.json')) as f:
 SECRET_KEY = 'django-insecure-+c^g9c+*)q!fs*dll$2*apqk=g@c*6)9%ikw^8t!v)3k+q8fa2'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 
 # Application definition

@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "project-1-soft-en",
+  "private_key_id": "67417f77bcb1c6348a053a271c4cb1da3141f9d0",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCbHegHRWHlVgy9\nBTF9KF9Owan7dMpjWyhu4gm8CNqosHqtKlQ/fplthwsbzDOcCCUcq6FXv3bjIrjt\nH/yBQvrGsE3eqac51UCFtCFlkH/fHd8y80vMNyKEeIheOQEmkaVLEwU19TEOwLGM\n3sIKiKhfKsSfVL2eMdhWQg/fPASRWg68kIQ/y7Pf+tKUofRKczRU5SGmWi2jGg/X\nqLgVXv5q2Z6z+NIDW1f7E33QIXsR6bIY39Ph/iPFDmFeg+uuGd9aUYTkg9S+EuMP\nLyXfv7Kxif/5bW/iPjKiR21Jm8OZt6qUPSukIC7Ftm4z3xXM6k12QiBBvCAbGQN4\nee/LRgGPAgMBAAECggEACxP9NLu7TJ4zJbK/wJEIEX9aTPef1q21ewnQqSm2uBJ2\niHR79NbtTTm2TONuEigwwlXtnW8ypfEeZO0CYxbuAw+nWA4kv8gfpgzhz7ecskoX\nXTOsB6cuY2iaUKRglSkUtYJjvmFHAic35vgnwonVAIr05O4v5qLnsO1h5c8LAnhg\nCKb1ARXC7fFzt+fWob/pse7TYycp+kkRSSi3LK9L4bjnqb0KOAYd52i40M+Jnkc0\naBdTyQ8XO0UiEaKvsZvH6BCXHaOYFvQMTpLleP0KRZghu7bNb3AUk9Q0XugAKL0l\n4I6zjGpV2a2ZGKoFtjhAyxL0gSbvWObgWvO6eFN6nQKBgQDWEQ/og0HQ8L5Xth/R\nLjRmatkdY1rykzjj1RMFePe2SurMiQTWRtXGKoKZuvAngAro5vmwt1ysE/JI240Y\nD2vGNOOuylVqQK9d4w2V+3ZZiAoqh4uBrTsA5rjTFuS7dEP7hnrn24FPvt4mRPE5\nQ0IGfcPutb2ofXNIDSruXqZp7QKBgQC5gKY63otcyKfIYTnwDDedb4Bq3ub+YXRo\nMIdLbywZHQS0iueD5WpO3dmYfhQRiSD070uFda3XD2lOexn6PukWAnqnBlDHfv6l\n+5QCQ+uIOEWz0NvE5jI0K+mami14ZQuexU+eRSrgOrLTxizEfGxNriYaWa2Lx6QT\nwtDpFQE56wKBgQCNjBSv03MGvNmv196sC9hcTJSqCROPSOgaRr9gI//wCxO9EXEg\nWxBqC5v2GRVJmTIdlPVP878Ujc/seziNy0yhcEGJR4M5UfJjq4pFPVShmQHX427M\n3YYhb26RLhcrGJMHU4IbpBqaZ4QvW/EBw0Z6UljnlEcHjYRYBVT4758sdQKBgHA5\nRFeZCva27cpsB4ER4xN7wVTmRRjgHGxr723Tc/o9c/tFjYpd4FKWJG382GdDboy/\nuBClgOX6jNrN3olmRdzq4wjo6TXHvobsDD7SmEtwv7ppQIt+OCEX79t4KsoLV1xW\nQjSd47KD0GwOGEdGfr7//E00s6k8via2VWytKHDBAoGBAKKnEIL5tMUWvTNFtPUD\n4EjOp7Ew2qRZt2GgWV3JdUMC5n/bRT96Jtix0A7CE2S6qEOScF2Qy7JewE/5cp9D\nN72fGSX1bbiGpJJ8unYh8p52O0/RLkAV/s0Fgj56Ie+qDBEqYa3tMWH5oU8YXH2h\nfKPbEQVFyqNW62YQQER0zCO2\n-----END PRIVATE KEY-----\n",
+  "client_email": "lab-reservation-system@project-1-soft-en.iam.gserviceaccount.com",
+  "client_id": "107364195450749971403",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/lab-reservation-system%40project-1-soft-en.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
