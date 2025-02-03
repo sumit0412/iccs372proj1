@@ -4,6 +4,7 @@ certifi==2025.1.31
 charset-normalizer==3.4.1
 crispy-bootstrap5==2024.10
 dj-config-url==0.1.1
+dj-database-url==2.3.0
 Django==5.1.5
 django-crispy-forms==2.3
 google-api-core==2.24.1
@@ -24,5 +25,6 @@ requests==2.32.3
 requests-oauthlib==2.0.0
 rsa==4.9
 sqlparse==0.5.3
+typing_extensions==4.12.2
 uritemplate==4.1.1
 urllib3==2.3.0
