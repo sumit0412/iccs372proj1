@@ -211,4 +211,7 @@ ENV/
 # mkdocs documentation
 /site
 
+project-1-soft-en.json
+client_secret.json
+
 # End of https://www.gitignore.io/api/macos,linux,django,python,pycharm
