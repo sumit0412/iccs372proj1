@@ -213,5 +213,9 @@ ENV/
 
 project-1-soft-en.json
 client_secret.json
+__pycache__
+/staticfiles
+*.pem
+.DS_Store
 
 # End of https://www.gitignore.io/api/macos,linux,django,python,pycharm
