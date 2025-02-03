@@ -1,1 +1,1 @@
-web: gunicorn iccs372proj1.wsgi
+web: cd iccs372proj1 && gunicorn iccs372proj1.wsgi

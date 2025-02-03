@@ -2,7 +2,8 @@
 # exit on error
 set -o errexit
 
-pip install -r requirements.txt
+cd iccs372proj1
+pip install -r ../requirements.txt
 
 python manage.py collectstatic --no-input
 python manage.py migrate
